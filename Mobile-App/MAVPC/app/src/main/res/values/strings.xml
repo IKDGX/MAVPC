@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">MAV PC</string>
+
+    <!-- login -->
+    <string name="login_title">Inicio de Sesión</string>
+    <string name="login_email">Correo electrónico</string>
+    <string name="login_pass">Contraseña</string>
+    <string name="login_enter">Entrar</string>
+    <string name="login_register">Registrate</string>
+
+    <!-- explorar -->
+
+    <!-- datos -->
+
+    <!-- favoritos -->
+
+    <!-- incidencias -->
+</resources>
