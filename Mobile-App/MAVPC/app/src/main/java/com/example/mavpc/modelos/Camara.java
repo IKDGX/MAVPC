@@ -1,0 +1,87 @@
+package com.example.mavpc.modelos;
+
+public class Camara {
+    private String id;
+    private String name;
+    private String urlImage;
+    private String latitude;
+    private String longitude;
+    private String road;
+    private String km;
+    private String direction;
+
+    public Camara(String id, String name, String urlImage, String latitude, String longitude, String road, String km, String direction) {
+        this.id = id;
+        this.name = name;
+        this.urlImage = urlImage;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.road = road;
+        this.km = km;
+        this.direction = direction;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getUrlImage() {
+        return urlImage;
+    }
+
+    public void setUrlImage(String urlImage) {
+        this.urlImage = urlImage;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getRoad() {
+        return road;
+    }
+
+    public void setRoad(String road) {
+        this.road = road;
+    }
+
+    public String getKm() {
+        return km;
+    }
+
+    public void setKm(String km) {
+        this.km = km;
+    }
+
+    public String getDirection() {
+        return direction;
+    }
+
+    public void setDirection(String direction) {
+        this.direction = direction;
+    }
+}

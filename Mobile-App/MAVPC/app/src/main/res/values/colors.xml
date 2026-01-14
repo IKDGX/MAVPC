@@ -3,9 +3,9 @@
 <resources>
     <color name="black">#000000</color>
     <color name="dark_blue">#0F1324</color>
-    <color name="light_blue">#171E2D</color>
+    <color name="light_blue">#20293F</color>
     <color name="neon_yellow">#F5FB4A</color>
     <color name="dark_grey">#242323</color>
     <color name="link_blue">#5681ee</color>
-    <color name="white">#b9bbc0</color>
+    <color name="white">#ffffffff</color>
 </resources>
