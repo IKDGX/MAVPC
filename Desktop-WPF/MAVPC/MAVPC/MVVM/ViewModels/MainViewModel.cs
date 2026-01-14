@@ -51,6 +51,12 @@ namespace MAVPC.MVVM.ViewModels
             CurrentView = _provider.GetRequiredService<LoginViewModel>();
         }
 
-        [RelayCommand] private void CloseApp() => Application.Current.Shutdown();
+        [RelayCommand] private void CloseApp() => Application.Current.Shutdown(0);
+        [RelayCommand]
+        private void ShowStats()
+        {
+            CurrentView = _provider.GetRequiredService<StatsViewModel>();
+        }
+
     }
 }

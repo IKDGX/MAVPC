@@ -15,5 +15,17 @@ namespace MAVPC.MVVM.Views
             if (e.LeftButton == MouseButtonState.Pressed)
                 DragMove();
         }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            try
+            {
+                GMap.NET.GMaps.Instance.CancelTileCaching();
+            }
+            catch { /* Ignorar si falla */ }
+
+            // Mata la aplicación completa inmediatamente
+            Environment.Exit(0);
+        }
     }
 }

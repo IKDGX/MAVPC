@@ -9,7 +9,8 @@
         WindowStyle="None"
         WindowState="Maximized"
         Background="{StaticResource DarkBg}"
-        AllowsTransparency="True">
+        AllowsTransparency="True"
+        Closed="Window_Closed">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -22,6 +23,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:MapViewModel}">
             <views:MapView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StatsViewModel}">
+            <views:StatsView/>
         </DataTemplate>
     </Window.Resources>
 
@@ -79,6 +83,12 @@
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="MapMarker" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <TextBlock Text="MAPA" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton Style="{StaticResource MaterialDesignTabRadioButton}" Height="50" Command="{Binding ShowStatsCommand}" Foreground="White" Padding="20,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="ChartBar" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBlock Text="ESTADÍSTICAS" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </RadioButton>
                         </StackPanel>

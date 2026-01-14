@@ -26,6 +26,7 @@ namespace MAVPC
             services.AddTransient<LoginViewModel>();
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<MapViewModel>();
+            services.AddTransient<StatsViewModel>();
 
             // Vistas
             services.AddSingleton<MainView>(provider => new MainView

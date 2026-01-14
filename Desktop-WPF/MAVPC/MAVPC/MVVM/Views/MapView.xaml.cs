@@ -20,7 +20,8 @@ namespace MAVPC.MVVM.Views
         {
             // 1. Configuración obligatoria
             GMaps.Instance.Mode = AccessMode.ServerAndCache;
-            MainMap.MapProvider = GMapProviders.OpenStreetMap;
+            // MainMap.MapProvider = GMapProviders.OpenStreetMap;
+            MainMap.MapProvider = GMapProviders.ArcGIS_World_Street_Map;
             MainMap.Position = new PointLatLng(42.8467, -2.6716); // Vitoria
             MainMap.DragButton = MouseButton.Left;
             MainMap.ShowCenter = false;
