@@ -29,11 +29,6 @@ public class CamaraController {
         return camaraDao.findAll();
     }
     
-    @GetMapping("/buscar/{provincia}")
-    public List<Map<String, Object>> buscar(@PathVariable String provincia) {
-        return traficoService.obtenerIncidenciasPorProvincia(provincia);
-    }
-    
     @PostMapping("/guardar")
     public String guardarCamara(@RequestBody Camara camara) {
     	try {

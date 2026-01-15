@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,20 +32,47 @@ public class TraficoService {
     public Object obtenerTodasIncidencias() {
         return restTemplate.getForObject(BASE_URL + "/incidences", Object.class);
     }
+    
+    public List<Incidencia> obtenerTodasIncidenciasDelDia(String anio, String mes, String dia) {
+        List<Incidencia> todasLasDelDia = new ArrayList<>();
+        int paginaActual = 1;
+        int totalPaginas = 1;
+        ObjectMapper mapper = new ObjectMapper();
 
-    // 2. Incidencias por Provincia (Ej: "Gipuzkoa", "Bizkaia", "Araba")
-    public List<Map<String, Object>> obtenerIncidenciasPorProvincia(String provincia) {
-        // 1. Llamamos a la API de Euskadi y recibimos la lista completa
-        // Usamos Map para manejar el JSON dinámico de la API
-        Map<String, Object> respuesta = restTemplate.getForObject(BASE_URL + "/incidences", Map.class);
-        
-        // 2. Extraemos la lista de incidencias (suelen venir bajo la llave "incidences")
-        List<Map<String, Object>> todas = (List<Map<String, Object>>) respuesta.get("incidences");
+        try {
+            do {
+                // Construimos la URL con la fecha Y el parámetro de página
+                String url = BASE_URL + "/incidences/byDate/" + anio + "/" + mes + "/" + dia + "?_page=" + paginaActual;
+                
+                JsonNode root = restTemplate.getForObject(url, JsonNode.class);
 
-        // 3. Filtramos por el nombre de la provincia
-        return todas.stream()
-            .filter(i -> provincia.equalsIgnoreCase((String) i.get("province")))
-            .toList();
+                if (root != null && root.has("incidences")) {
+                    // En la primera página, leemos el total de páginas para esa fecha
+                    if (paginaActual == 1 && root.has("totalPages")) {
+                        totalPaginas = root.get("totalPages").asInt();
+                    }
+
+                    // Extraemos la lista de esta página
+                    JsonNode nodes = root.get("incidences");
+                    List<Incidencia> paginaLista = mapper.convertValue(
+                        nodes, 
+                        new TypeReference<List<Incidencia>>() {}
+                    );
+
+                    // Añadimos los resultados a la lista acumulada
+                    todasLasDelDia.addAll(paginaLista);
+                    
+                    paginaActual++;
+                } else {
+                    break;
+                }
+            } while (paginaActual <= totalPaginas);
+
+        } catch (Exception e) {
+            System.err.println("Error al obtener incidencias del día paginadas: " + e.getMessage());
+        }
+
+        return todasLasDelDia;
     }
 
     // 3. Obtener Cámaras de tráfico
