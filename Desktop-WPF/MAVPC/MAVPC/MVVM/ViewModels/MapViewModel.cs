@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging; // <--- IMPORTANTE PARA EL REFRESCO
 using GMap.NET;
 using GMap.NET.WindowsPresentation;
 using MAVPC.Models;
+using MAVPC.MVVM.Views.Controls;
 using MAVPC.Services;
 using System;
 using System.Collections.Generic;
@@ -172,66 +173,88 @@ namespace MAVPC.MVVM.ViewModels
             Markers.Clear();
             filter = filter?.ToLower().Trim() ?? "";
 
-            // --- PINTAR INCIDENCIAS ---
+            // --- 1. PINTAR INCIDENCIAS ---
             foreach (var inc in _allIncidencias)
             {
+                // RECUPERADO: Definiciones de variables que faltaban
                 string tipo = inc.IncidenceType?.ToLower() ?? "";
                 string via = inc.Road?.ToLower() ?? "";
+                string muni = inc.CityTown?.ToLower() ?? "";
 
+                // RECUPERADO: Lógica de EsObra
                 bool esObra = tipo.Contains("obra") || tipo.Contains("mantenimiento");
 
+                // Filtros de UI
                 if (esObra && !ShowWorks) continue;
                 if (!esObra && !ShowIncidents) continue;
 
-                if (!string.IsNullOrEmpty(filter) && !tipo.Contains(filter) && !via.Contains(filter)) continue;
+                // Filtro de Texto
+                if (!string.IsNullOrEmpty(filter) &&
+                    !tipo.Contains(filter) &&
+                    !via.Contains(filter) &&
+                    !muni.Contains(filter)) continue;
 
+                // RECUPERADO: Coordenadas
                 double lat = inc.Latitude ?? 0;
                 double lon = inc.Longitude ?? 0;
 
                 if (lat != 0 && lon != 0)
                 {
-                    string icon = esObra ? "🚧" : "⚠️";
                     string ubicacionTexto = $"{inc.Road ?? "?"} ({inc.CityTown ?? ""})";
-                    string tooltip = $"{icon} {inc.IncidenceType}\n📍 {ubicacionTexto}";
+                    string tooltip = $"{inc.IncidenceType}\n📍 {ubicacionTexto}";
 
-                    Brush color = esObra ? Brushes.Orange : Brushes.Red;
-                    AddMarker(lat, lon, color, tooltip, 15, inc);
+                    // Determinamos el tipo para pasarle al PinMap
+                    string tipoPin = esObra ? "obra" : "incidencia";
+
+                    // Llamada al método nuevo
+                    AddMarker(lat, lon, tipoPin, tooltip, inc);
                 }
             }
 
-            // --- PINTAR CÁMARAS (Lógica Inteligente Híbrida) ---
+            // --- 2. PINTAR CÁMARAS ---
             if (ShowCameras)
             {
                 foreach (var cam in _allCamaras)
                 {
                     if (!string.IsNullOrEmpty(filter) && (cam.Nombre == null || !cam.Nombre.ToLower().Contains(filter))) continue;
 
-                    // Usamos el método inteligente que decide si es UTM o LatLon normal
+                    // RECUPERADO: Usamos el helper TryGetCoordinates para obtener lat/lon
                     if (TryGetCoordinates(cam, out double lat, out double lon))
                     {
-                        AddMarker(lat, lon, Brushes.DodgerBlue, $"📷 {cam.Nombre}", 12, cam);
+                        AddMarker(lat, lon, "camara", $"📷 {cam.Nombre}", cam);
                     }
                 }
             }
         }
 
-        private void AddMarker(double lat, double lon, Brush color, string tooltip, double size, object dataObject)
+        private void AddMarker(double lat, double lon, string tipo, string tooltip, object dataObject)
         {
             var marker = new GMapMarker(new PointLatLng(lat, lon));
-            var shape = new Ellipse
-            {
-                Width = size,
-                Height = size,
-                Fill = color,
-                Stroke = Brushes.White,
-                StrokeThickness = 2,
-                ToolTip = tooltip,
-                Cursor = System.Windows.Input.Cursors.Hand
-            };
 
+            // 1. Instanciamos NUESTRO Pin personalizado
+            var pin = new PinMap();
+
+            // 2. Lo configuramos (el método que creamos antes)
+            pin.Configurar(tipo);
+
+            // 3. Configuramos propiedades visuales comunes
+            pin.ToolTip = tooltip;
+            pin.Cursor = System.Windows.Input.Cursors.Hand;
+
+            // Asignamos el UserControl como la "forma" del marcador
+            marker.Shape = pin;
             marker.Tag = dataObject;
-            marker.Shape = shape;
-            marker.Offset = new System.Windows.Point(-size / 2, -size / 2);
+
+            // IMPORTANTE: EL OFFSET
+            // Como es un pin con punta abajo, el offset debe ser:
+            // X: -Ancho / 2 (para centrarlo horizontalmente)
+            // Y: -Alto (para que la punta toque la coordenada, no el centro del pin)
+            // Nuestro PinMap mide 40x50.
+            marker.Offset = new System.Windows.Point(-20, -50);
+
+            // Corrección visual: Si tiene sombra, a veces hay que subirlo unos pixeles
+            // marker.Offset = new System.Windows.Point(-20, -48); 
+
             Markers.Add(marker);
         }
 

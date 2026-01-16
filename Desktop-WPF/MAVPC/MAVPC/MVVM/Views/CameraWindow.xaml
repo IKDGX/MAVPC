@@ -6,7 +6,8 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="Transparent">
+        Background="Transparent"
+        >
 
     <Border Background="#101010" CornerRadius="10" BorderBrush="{StaticResource NeonCyan}" BorderThickness="1">
         <Grid>
@@ -34,12 +35,19 @@
 
             <Border Grid.Row="1" Margin="20" Background="Black" BorderBrush="#333" BorderThickness="1">
                 <Grid>
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <StackPanel x:Name="PnlEstado" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <materialDesign:PackIcon Kind="SignalOff" Width="60" Height="60" Foreground="#333"/>
-                        <TextBlock Text="ESPERANDO SEÑAL DE VIDEO..." Foreground="#444" Margin="0,15,0,0" HorizontalAlignment="Center"/>
+                        <TextBlock Text="CONECTANDO STREAM..." Foreground="#444" Margin="0,15,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
 
-                    <Image x:Name="ImgMonitor" Stretch="Uniform"/>
+                    <MediaElement x:Name="VideoPlayer"
+                                  Stretch="Uniform"
+                                  LoadedBehavior="Manual"
+                                  UnloadedBehavior="Stop"
+                                  ScrubbingEnabled="True"
+                                  MediaOpened="VideoPlayer_MediaOpened"
+                                  MediaEnded="VideoPlayer_MediaEnded"
+                                  MediaFailed="VideoPlayer_MediaFailed"/>
                 </Grid>
             </Border>
 

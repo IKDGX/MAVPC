@@ -144,5 +144,7 @@ namespace MAVPC.MVVM.ViewModels
         {
             MessageBox.Show("Función de PDF pendiente de implementar.", "Info");
         }
+
+
     }
 }

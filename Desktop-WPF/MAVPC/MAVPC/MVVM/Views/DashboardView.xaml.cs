@@ -23,5 +23,15 @@ namespace MAVPC.MVVM.Views
                 ventana.ShowDialog(); // ShowDialog bloquea el fondo hasta que cierras
             }
         }
+
+        private void MediaElement_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            // Este código hace el bucle: cuando el vídeo acaba, vuelve al inicio (0) y reproduce
+            if (sender is MediaElement media)
+            {
+                media.Position = TimeSpan.Zero;
+                media.Play();
+            }
+        }    
     }
 }

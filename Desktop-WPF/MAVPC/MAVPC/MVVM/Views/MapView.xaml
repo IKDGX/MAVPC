@@ -5,10 +5,17 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             
+             xmlns:converters="clr-namespace:MAVPC.MVVM.Converters"
+             
              mc:Ignorable="d" d:DesignHeight="700" d:DesignWidth="1000">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <converters:MapIncidentTypeToIconConverter x:Key="IncidentTypeToIconConverter"/>
+        <converters:MapIncidentTypeToColorConverter x:Key="IncidentTypeToColorConverter"/>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
     </UserControl.Resources>
 
     <Grid>

@@ -1,13 +1,15 @@
-﻿using GMap.NET;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using GMap.NET;
 using GMap.NET.MapProviders;
 using GMap.NET.WindowsPresentation;
 using MAVPC.Models;
 using MAVPC.MVVM.ViewModels;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace MAVPC.MVVM.Views
 {
@@ -19,6 +21,18 @@ namespace MAVPC.MVVM.Views
         {
             InitializeComponent();
             this.Unloaded += MapView_Unloaded;
+
+            // --- OPTIMIZACIÓN DE ARRASTRE ---
+            // "ShowMarkers" no existe en WPF, usamos nuestra función ToggleMarkers
+            MainMap.MouseLeftButtonDown += (s, e) => ToggleMarkers(false);
+            MainMap.MouseLeftButtonUp += (s, e) => ToggleMarkers(true);
+
+            // Soporte para botón derecho
+            MainMap.MouseRightButtonDown += (s, e) => ToggleMarkers(false);
+            MainMap.MouseRightButtonUp += (s, e) => ToggleMarkers(true);
+
+            // Evento para el Zoom
+            MainMap.OnMapZoomChanged += MainMap_OnMapZoomChanged;
         }
 
         private void MainMap_Loaded(object sender, RoutedEventArgs e)
@@ -36,15 +50,13 @@ namespace MAVPC.MVVM.Views
 
                 // Suscripciones
                 _viewModel.Markers.CollectionChanged += OnMarkersCollectionChanged;
-
-                // NUEVO: Escuchar cuando el usuario elige algo en el Buscador
                 _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             }
         }
 
+        // Detectar selección en el buscador
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            // Si el usuario seleccionó un resultado en la lista desplegable...
             if (e.PropertyName == nameof(MapViewModel.SelectedResult))
             {
                 var result = _viewModel?.SelectedResult;
@@ -52,9 +64,9 @@ namespace MAVPC.MVVM.Views
                 {
                     // 1. Movemos el mapa
                     MainMap.Position = new PointLatLng(result.Lat, result.Lon);
-                    MainMap.Zoom = 14;
+                    MainMap.Zoom = 15; // Ajustado a un zoom más cercano para ver detalle
 
-                    // 2. Abrimos la ventana correspondiente automáticamente
+                    // 2. Abrimos la ventana correspondiente
                     if (result.DataObject is Camara cam) new CameraWindow(cam).Show();
                     else if (result.DataObject is Incidencia inc) new IncidentWindow(inc).Show();
                 }
@@ -71,14 +83,16 @@ namespace MAVPC.MVVM.Views
             }
         }
 
-        // ... (OnMarkersCollectionChanged y ActualizarMapaCompleto igual que antes) ...
         private void OnMarkersCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
             {
                 foreach (GMapMarker m in e.NewItems) { MainMap.Markers.Add(m); ConfigurarClickMarcador(m); }
             }
-            else if (e.Action == NotifyCollectionChangedAction.Reset) MainMap.Markers.Clear();
+            else if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                MainMap.Markers.Clear();
+            }
         }
 
         private void ActualizarMapaCompleto()
@@ -90,26 +104,50 @@ namespace MAVPC.MVVM.Views
             }
         }
 
-        // Configuración de CLIC EN EL MAPA
         private void ConfigurarClickMarcador(GMapMarker marker)
         {
             if (marker.Shape is UIElement shape)
             {
                 shape.MouseLeftButtonDown += (s, e) =>
                 {
-                    // 1. Es Cámara
                     if (marker.Tag is Camara camaraSeleccionada)
                     {
                         new CameraWindow(camaraSeleccionada).Show();
                         e.Handled = true;
                     }
-                    // 2. NUEVO: Es Incidencia
                     else if (marker.Tag is Incidencia incidenciaSeleccionada)
                     {
                         new IncidentWindow(incidenciaSeleccionada).Show();
                         e.Handled = true;
                     }
                 };
+            }
+        }
+
+        // --- LÓGICA DE OPTIMIZACIÓN (Reemplaza a ShowMarkers) ---
+
+        private void MainMap_OnMapZoomChanged()
+        {
+            ToggleMarkers(false); // Ocultar
+
+            Dispatcher.InvokeAsync(async () =>
+            {
+                await Task.Delay(300); // Esperar a que renderice
+                ToggleMarkers(true);   // Mostrar
+            });
+        }
+
+        // Esta función hace el trabajo sucio de ocultar los iconos uno a uno
+        private void ToggleMarkers(bool visible)
+        {
+            var visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+            foreach (var marker in MainMap.Markers)
+            {
+                if (marker.Shape != null)
+                {
+                    marker.Shape.Visibility = visibility;
+                }
             }
         }
     }
