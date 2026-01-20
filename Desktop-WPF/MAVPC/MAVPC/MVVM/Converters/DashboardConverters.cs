@@ -1,8 +1,11 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.Input;
+using MaterialDesignThemes.Wpf;
+using MAVPC.Models;
+using System;
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
-using MaterialDesignThemes.Wpf;
 
 namespace MAVPC.MVVM.Converters
 {
@@ -42,4 +45,6 @@ namespace MAVPC.MVVM.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
-}
+
+          
+    }

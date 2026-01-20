@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace MAVPC.Services
 {
@@ -70,5 +71,24 @@ namespace MAVPC.Services
 
         public async Task<List<Incidencia>> GetIncidenciasAsync() =>
             await _httpClient.GetFromJsonAsync<List<Incidencia>>("http://10.10.16.93:8080/api/incidencias/listarActual", _jsonOptions) ?? new();
+
+        public async Task<bool> DeleteCamaraAsync(string id)
+        {
+            try
+            {
+                // 1. Construimos la URL con el parámetro 'id' (porque en Java es @RequestParam)
+                string url = $"http://10.10.16.93:8080/api/camaras/eliminar?id={id}";
+
+                // 2. ¡IMPORTANTE! Usamos GetAsync porque el servidor tiene @GetMapping
+                var response = await _httpClient.GetAsync(url);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                // MessageBox.Show($"Error de conexión: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

@@ -13,5 +13,6 @@ namespace MAVPC.Services
         // Métodos de Escritura (POST)
         Task<bool> AddCamaraAsync(Camara nuevaCamara);
         Task<bool> AddIncidenciaAsync(Incidencia nuevaIncidencia);
+        Task<bool> DeleteCamaraAsync(string id);
     }
 }

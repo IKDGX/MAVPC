@@ -157,42 +157,73 @@
 
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Style="{StaticResource MaterialDesignFlatButton}" 
-                                        Click="BtnVerCamara_Click"
-                                        Width="260" Height="160" Margin="0,0,15,15" Padding="0">
+                                <Grid Margin="0,0,15,15" Width="260" Height="160">
+
                                     <Border CornerRadius="8" ClipToBounds="True" Background="#0F0F0F" BorderBrush="#333" BorderThickness="1">
                                         <Grid>
-                                            <Image Source="{Binding UrlImagen}" Stretch="UniformToFill" Opacity="0.8"/>
+                                            <Image Source="{Binding UrlImagen}" Stretch="UniformToFill" Opacity="1.0"/>
 
-                                            <Border VerticalAlignment="Bottom" Height="60">
+                                            <Border VerticalAlignment="Bottom" Height="50">
                                                 <Border.Background>
                                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                                         <GradientStop Color="Transparent" Offset="0"/>
-                                                        <GradientStop Color="#CC000000" Offset="1"/>
+                                                        <GradientStop Color="#E6000000" Offset="1"/>
                                                     </LinearGradientBrush>
                                                 </Border.Background>
                                             </Border>
 
-                                            <Border Background="Red" CornerRadius="3" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="5,2">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="REC" Foreground="White" FontSize="9" FontWeight="Bold"/>
-                                                </StackPanel>
-                                            </Border>
-
-                                            <StackPanel VerticalAlignment="Bottom" Margin="10">
-                                                <TextBlock Text="{Binding Nombre}" Foreground="White" FontWeight="Bold" FontSize="13" TextTrimming="CharacterEllipsis"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                    <materialDesign:PackIcon Kind="MapMarker" Width="10" Height="10" Foreground="Gray" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding Carretera}" Foreground="LightGray" FontSize="11" Margin="4,0,0,0"/>
-                                                    <TextBlock Text="{Binding Kilometro, StringFormat='KM {0}'}" Foreground="{StaticResource NeonCyan}" FontSize="11" Margin="8,0,0,0" FontWeight="Bold"/>
+                                            <StackPanel VerticalAlignment="Bottom" Margin="12">
+                                                <TextBlock Text="{Binding Nombre}" Foreground="White" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <materialDesign:PackIcon Kind="MapMarker" Width="12" Height="12" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Carretera}" Foreground="#CCCCCC" FontSize="12" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Kilometro, StringFormat='KM {0}'}" Foreground="{StaticResource NeonCyan}" FontSize="12" Margin="8,0,0,0" FontWeight="Bold" VerticalAlignment="Center"/>
                                                 </StackPanel>
                                             </StackPanel>
 
-                                            <materialDesign:PackIcon Kind="PlayCircleOutline" Width="40" Height="40" Foreground="White" Opacity="0.6"
-                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Grid>
                                     </Border>
-                                </Button>
+
+                                    <Button Background="Transparent" 
+                                            Cursor="Hand"
+                                            BorderBrush="Transparent"
+                                            Click="BtnVerCamara_Click"
+                                            HorizontalAlignment="Stretch" 
+                                            VerticalAlignment="Stretch"
+                                            Padding="0">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}">
+                                                                <ContentPresenter/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#11FFFFFF"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                            Background="#CC111111" 
+                                            BorderBrush="#333"
+                                            Width="28" Height="28"
+                                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                                            Margin="5"
+                                            ToolTip="Eliminar Cámara"
+                                            Command="{Binding DataContext.DeleteCameraCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <materialDesign:PackIcon Kind="TrashCan" Width="14" Height="14" Foreground="#FF5555"/>
+                                    </Button>
+
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

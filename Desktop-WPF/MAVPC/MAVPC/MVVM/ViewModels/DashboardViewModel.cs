@@ -5,10 +5,10 @@ using MAVPC.MVVM.Views;
 using MAVPC.Services;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel; // [NUEVO] Necesario para ICollectionView
+using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Data; // [NUEVO] Necesario para CollectionViewSource
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace MAVPC.MVVM.ViewModels
@@ -21,10 +21,10 @@ namespace MAVPC.MVVM.ViewModels
         [ObservableProperty] private ObservableCollection<Camara> _cameras;
         [ObservableProperty] private ObservableCollection<Incidencia> _incidencias;
 
-        // [NUEVO] VISTA FILTRABLE PARA EL XAML
+        // VISTA FILTRABLE PARA EL XAML
         public ICollectionView CamerasView { get; private set; }
 
-        // [NUEVO] TEXTO DE BÚSQUEDA
+        // TEXTO DE BÚSQUEDA
         private string _searchText;
         public string SearchText
         {
@@ -33,7 +33,6 @@ namespace MAVPC.MVVM.ViewModels
             {
                 if (SetProperty(ref _searchText, value))
                 {
-                    // Cada vez que escribes, refrescamos el filtro
                     CamerasView?.Refresh();
                 }
             }
@@ -69,10 +68,17 @@ namespace MAVPC.MVVM.ViewModels
                 Cameras.Clear();
                 if (dataCam != null) foreach (var item in dataCam) Cameras.Add(item);
 
-                // [NUEVO] Inicializar la Vista Filtrable sobre la lista de Cámaras
-                CamerasView = CollectionViewSource.GetDefaultView(Cameras);
-                CamerasView.Filter = FilterCameras; // Asignamos la función de filtrado
-                OnPropertyChanged(nameof(CamerasView)); // Avisamos al XAML
+                // Inicializar la Vista Filtrable
+                if (CamerasView == null)
+                {
+                    CamerasView = CollectionViewSource.GetDefaultView(Cameras);
+                    CamerasView.Filter = FilterCameras;
+                }
+                else
+                {
+                    CamerasView.Refresh();
+                }
+                OnPropertyChanged(nameof(CamerasView));
 
                 // 2. Cargar Incidencias
                 var dataInc = await _trafficService.GetIncidenciasAsync();
@@ -95,24 +101,66 @@ namespace MAVPC.MVVM.ViewModels
             }
         }
 
-        // [NUEVO] LÓGICA DEL FILTRO
+        // LÓGICA DEL FILTRO
         private bool FilterCameras(object item)
         {
             if (item is Camara cam)
             {
-                // Si el buscador está vacío, mostrar todo
                 if (string.IsNullOrWhiteSpace(SearchText))
                     return true;
 
                 string search = SearchText.ToLower();
 
-                // Buscamos por Nombre, Carretera o Kilómetro
-                // Usamos ?.ToString() para evitar errores si algún dato viene nulo
                 return (cam.Nombre != null && cam.Nombre.ToLower().Contains(search)) ||
                        (cam.Carretera != null && cam.Carretera.ToLower().Contains(search)) ||
                        (cam.Kilometro != null && cam.Kilometro.ToString().Contains(search));
             }
             return false;
+        }
+
+        // --- COMANDO ELIMINAR CORREGIDO ---
+        // Cambiamos el parámetro a 'object' para evitar crash de tipos en el binding XAML
+        [RelayCommand]
+        private async Task DeleteCamera(object parameter)
+        {
+            // Verificamos y convertimos manualmente para mayor seguridad
+            if (parameter is not Camara camara) return;
+
+            var result = MessageBox.Show(
+                $"¿Estás seguro de que deseas eliminar la cámara '{camara.Nombre}'?\nEsta acción es irreversible.",
+                "Confirmar Eliminación",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                // Llamada a la API
+                bool exito = await _trafficService.DeleteCamaraAsync(camara.Id);
+
+                if (exito)
+                {
+                    // Importante: Eliminar de la colección principal
+                    Cameras.Remove(camara);
+
+                    // Actualizar contadores
+                    TotalCameras = Cameras.Count;
+
+                    // Opcional: Refrescar la vista si usas filtros complejos, 
+                    // aunque ObservableCollection suele notificarlo solo.
+                    CamerasView?.Refresh();
+                }
+                else
+                {
+                    MessageBox.Show("No se pudo eliminar la cámara. Verifica la API.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                // ESTE CATCH ES EL QUE FALTABA PARA EVITAR QUE LA APP CIERRE SI FALLA EL SERVICIO
+                MessageBox.Show($"Error crítico al eliminar: {ex.Message}", "Excepción", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         [RelayCommand]
@@ -130,12 +178,15 @@ namespace MAVPC.MVVM.ViewModels
             };
 
             Action closeAction = () => window.Close();
+
+            // Asegúrate de pasar el servicio correctamente
             var addItemVm = new AddItemViewModel(_trafficService, closeAction);
             var view = new AddItemView { DataContext = addItemVm };
 
             window.Content = view;
             window.ShowDialog();
 
+            // Recargar datos al cerrar la ventana
             await LoadData();
         }
 
@@ -144,7 +195,5 @@ namespace MAVPC.MVVM.ViewModels
         {
             MessageBox.Show("Función de PDF pendiente de implementar.", "Info");
         }
-
-
     }
 }
