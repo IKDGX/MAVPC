@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.location.Location;
-import android.media.Image;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -24,7 +23,6 @@ import java.util.List;
 import java.util.Calendar;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
@@ -222,7 +220,7 @@ public class Explorar extends BaseActivity implements OnMapReadyCallback {
         ApiService service = retrofit.create(ApiService.class);
 
         // llamada a la api
-        Call<List<Incidencia>> call = service.obtenerIncidencias();
+        Call<List<Incidencia>> call = service.obtenerIncidenciasHoy();
 
         call.enqueue(new Callback<List<Incidencia>>() {
             @Override
