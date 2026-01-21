@@ -30,10 +30,11 @@ public class UsuarioController {
 		return usuarioDao.findAll();
 	}
 	
-	@GetMapping("/borrarUsuario")
+	@GetMapping("/eliminar")
 	public void BorrarUsuario(@RequestParam int idUsuario) {
 		usuarioDao.deleteById(idUsuario);
 	}
+	
 	
 	@PostMapping("/guardarUsuario")
 	public void GuardarUsuario(@RequestBody Usuario usuario) {
@@ -51,8 +52,19 @@ public class UsuarioController {
 	camaraFavoritaUsuarioDao.save(camaraFavoritaUsuario);	
 	}
 	
-	@GetMapping("/BorrarFavoritos")
+	@GetMapping("/eliminarFavoritos")
 	public void borrarFavoritos(@RequestParam int id) {
 		camaraFavoritaUsuarioDao.deleteById(id);	
 	}
+	
+	@PostMapping("/comprobarUsuario")
+	public boolean comprobarUsuario(@RequestParam String usuario, @RequestParam String contrasena) {
+	return usuarioDao.existsByUsuarioAndContrasena(usuario, contrasena);
+	}
+	
+	@PostMapping("/buscarUsuarioPorNombre")
+	public Usuario buscarUsuarioPorNombre(@RequestParam String usuario) {
+		return usuarioDao.findByUsuario(usuario);
+	}
+	
 }

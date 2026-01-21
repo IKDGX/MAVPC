@@ -1,9 +1,11 @@
 package com.example.demo;
 
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -99,49 +101,107 @@ public class TraficoService {
         int totalPaginas = 1;
         String URL_BASE_EUSKADI = "https://api.euskadi.eus/traffic/v1.0/cameras";
 
+        String dominioAntiguo = "https://www.trafikoa.eus";
+        String dominioNuevo = "https://apps.trafikoa.euskadi.eus";
+
         do {
-            // El parámetro correcto es _page (con guion bajo)
             String urlConPagina = URL_BASE_EUSKADI + "?_page=" + paginaActual;
             
             try {
                 JsonNode root = restTemplate.getForObject(urlConPagina, JsonNode.class);
 
                 if (root != null && root.has("cameras")) {
-                    // 1. En la primera página, leemos cuántas hay en total
+                    // 1. Obtener total de páginas
                     if (paginaActual == 1) {
                         totalPaginas = root.get("totalPages").asInt();
                         System.out.println("Total de páginas detectadas: " + totalPaginas);
                     }
 
-                    // 2. Extraer y convertir la lista de cámaras de la página actual
+                    // 2. Convertir JSON a Lista
                     JsonNode camerasNode = root.get("cameras");
                     ObjectMapper mapper = new ObjectMapper();
+                    
                     List<Camara> listaPagina = mapper.convertValue(
                         camerasNode, 
                         new TypeReference<List<Camara>>() {}
                     );
 
-                    // 3. Guardar en BD (Hibernate hará Insert o Update según el ID)
-                    camaraDao.saveAll(listaPagina);
-                    System.out.println("Procesada página " + paginaActual + " de " + totalPaginas);
+                    // Lista temporal para almacenar SOLO las válidas
+                    List<Camara> camarasParaGuardar = new ArrayList<>();
+
+                    // --- BUCLE DE PROCESAMIENTO ---
+                    for (Camara camara : listaPagina) {
+                        
+                        // A. Limpiar ID para autoincremento
+                        camara.setId(null); 
+
+                        // B. Lógica de corrección de URL (Hacer esto ANTES de validar)
+                        String urlCamara = camara.getUrlImage();
+                        if (urlCamara != null && urlCamara.contains(dominioAntiguo)) {
+                            String nuevaUrl = urlCamara.replace(dominioAntiguo, dominioNuevo);
+                            camara.setUrlImage(nuevaUrl);
+                            urlCamara = nuevaUrl; // Actualizamos la variable local para usarla en la validación
+                        }
+
+                        // C. FILTRADO: Validar URL (No null y Status 200)
+                        if (urlCamara != null && esUrlValida(urlCamara)) {
+                            camarasParaGuardar.add(camara);
+                        } else {
+                            // Opcional: Log para saber cuáles se ignoran
+                            // System.out.println("Ignorando cámara sin imagen válida: " + camara.getSourceId());
+                        }
+                    }
+                    // ------------------------------
+
+                    // 3. Guardar en BD solo las filtradas
+                    if (!camarasParaGuardar.isEmpty()) {
+                        camaraDao.saveAll(camarasParaGuardar);
+                        System.out.println("Guardada página " + paginaActual + ". Insertadas: " + camarasParaGuardar.size() + " (Descartadas: " + (listaPagina.size() - camarasParaGuardar.size()) + ")");
+                    } else {
+                        System.out.println("Página " + paginaActual + " procesada, pero ninguna cámara tenía imagen válida.");
+                    }
 
                     paginaActual++;
                     
-                    // Opcional: una pequeña pausa para ser respetuosos con la API
-                    Thread.sleep(100); 
-
+                    // NOTA: Al verificar URLs una por una, el proceso será más lento.
+                    // Thread.sleep(100); // Quizás ya no necesites sleep si la red hace de cuello de botella natural
                 } else {
                     break;
                 }
             } catch (Exception e) {
                 System.err.println("Error en la página " + paginaActual + ": " + e.getMessage());
-                break;
             }
 
         } while (paginaActual <= totalPaginas);
         
         System.out.println("Sincronización finalizada con éxito.");
     }
+
+    /**
+     * Método auxiliar para verificar si una URL devuelve código 200.
+     * Usa HEAD para ser más rápido (no descarga la imagen).
+     */
+    private boolean esUrlValida(String urlString) {
+        try {
+            // ✅ Usar URI en lugar de URL directamente
+            URI uri = new URI(urlString);
+            URL url = uri.toURL();
+            
+            HttpURLConnection huc = (HttpURLConnection) url.openConnection();
+            
+            huc.setRequestMethod("HEAD");
+            huc.setConnectTimeout(2000);
+            huc.setReadTimeout(2000);
+            
+            int responseCode = huc.getResponseCode();
+            
+            return responseCode == HttpURLConnection.HTTP_OK; 
+            
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
     public void SubirIncidencias2026() {
         int paginaActual = 1;
         int totalPaginas = 1;

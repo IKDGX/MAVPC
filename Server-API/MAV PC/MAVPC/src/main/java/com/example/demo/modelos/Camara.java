@@ -10,9 +10,9 @@ import jakarta.persistence.*;
 public class Camara {
 
     @Id
-    @JsonProperty("cameraId")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private String id; 
+    private Integer id; 
 
     @JsonProperty("cameraName")
     private String nombre;
@@ -35,11 +35,11 @@ public class Camara {
     @JsonProperty("address")
     private String direccion;
 
-	public String getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 

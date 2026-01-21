@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.TraficoService;
@@ -29,14 +30,24 @@ public class CamaraController {
         return camaraDao.findAll();
     }
     
-    @PostMapping("/guardar")
+    @GetMapping("/eliminar")
+    public void eliminarCamaras(@RequestParam String id) {
+        camaraDao.deleteById(id);
+    }
+    
+    @GetMapping("/guardar")
     public String guardarCamara(@RequestBody Camara camara) {
-    	try {
+    	try {  		
             camaraDao.save(camara);
             return "Sincronización completa finalizada con éxito.";
         } catch (Exception e) {
             return "Error durante la sincronización: " + e.getMessage();
         }
+    }
+    
+    @GetMapping("/sincronizar")
+    public void sincronizar() {
+    	traficoService.SubirCamaras();
     }
     
 }
