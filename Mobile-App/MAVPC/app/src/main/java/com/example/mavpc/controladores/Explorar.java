@@ -303,40 +303,38 @@ public class Explorar extends BaseActivity implements OnMapReadyCallback {
 
     private void prepararDetallesIncidencia(Incidencia i) {
         // titulo
-        String titulo = i.getType(); // Ej: "Obras"
+        String titulo;
+        if(i.getType() == null || i.getType().toLowerCase().trim().contains("otro")){
+            titulo = "Otro";
+        } else{
+            titulo = i.getType();
+        }
 
         String info = "";
-
         String gravedad = i.getLevel();
         if (gravedad != null){
             info += "Gravedad: " + gravedad + "\n" + "\n";
         }
-
         String causa = i.getCause();
         if (causa != null){
             info += "Causa: " + causa + "\n" + "\n";
         }
-
         String ciudad = i.getCityTown();
         if (ciudad != null){
             info += "Ciudad: " + ciudad + "\n" + "\n";
         }
-
         String carretera = i.getRoad();
         if (carretera != null){
             info += "Carretera: " + carretera + "\n" + "\n";
         }
-
         String direccion = i.getDirection();
         if (direccion != null){
             info += "Dirección: " + direccion + "\n" + "\n";
         }
-
         String latitud = i.getLatitude();
         if (latitud != null){
             info += "Latitud: " + latitud + "\n" + "\n";
         }
-
         String longitud = i.getLongitude();
         if (longitud != null){
             info += "Longitud: " + longitud;
@@ -376,7 +374,6 @@ public class Explorar extends BaseActivity implements OnMapReadyCallback {
                                 Marker marker = gMap.addMarker(new MarkerOptions()
                                         .position(posicion)
                                         .title(c.getName())
-                                        .snippet("Ver imagen")
                                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
 
                                 // guardamos la camara dentro del marcador para enseñar su informacion
@@ -466,7 +463,7 @@ public class Explorar extends BaseActivity implements OnMapReadyCallback {
             ivCamara.setVisibility(View.GONE);
 
             // cambiar altura al 50%
-            params.matchConstraintPercentHeight = 0.45f;
+            params.matchConstraintPercentHeight = 0.4f;
         }
 
         // aplicar los cambios de tamaño al cardview

@@ -8,7 +8,9 @@ import com.example.mavpc.modelos.Usuario;
 import java.util.List;
 
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 import retrofit2.http.Query;
 
 public interface ApiService {
@@ -20,8 +22,17 @@ public interface ApiService {
     Call<List<Camara>> obtenerCamaras();
 
     @GET("usuarios/comprobarUsuario")
-    Call<Usuario> comprobarUsuarioLogin(
-            @Query("usuario") String nombreUsuario,   // "usuario" es el nombre del parámetro en la API
-            @Query("contrasena") String password      // "contrasena" es el nombre del parámetro en la API
+    Call<Boolean> comprobarUsuarioLogin(
+            @Query("usuario") String usuario,
+            @Query("contrasena") String contrasena
     );
+
+    @GET("usuarios/comprobarUsuarioEmail")
+    Call<Boolean> comprobarUsuarioRegistro(
+            @Query("usuario") String usuario,
+            @Query("email") String email
+    );
+
+    @POST("usuarios/guardarUsuario")
+    Call<Void> registrarUsuario(@Body Usuario usuario);
 }

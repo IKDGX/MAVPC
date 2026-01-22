@@ -1,10 +1,18 @@
 package com.example.mavpc.modelos;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Usuario {
     private String id;
+
+    @SerializedName("usuario")
     private String username;
+
     private String email;
+    @SerializedName("contrasena")
     private String password;
+
+    @SerializedName("urlImage")
     private String pfpUrl;
 
     public Usuario(String id, String username, String email, String password, String pfpUrl) {
