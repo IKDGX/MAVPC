@@ -17,6 +17,7 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier; // <--- NUEVO IMPORT
 
 import com.example.demo.modelos.Incidencia;
 import com.example.demo.modelos.IncidenciaCreada;
@@ -56,7 +57,6 @@ public class Configracion {
         };
     }
 
-    // Configuración especial de RestTemplate para evitar el error PKIX (SSL)
     @Bean
     public RestTemplate restTemplate() {
         try {
@@ -64,8 +64,10 @@ public class Configracion {
                     .loadTrustMaterial(TrustAllStrategy.INSTANCE)
                     .build();
 
+            // AJUSTE AQUÍ: Añadimos .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
             SSLConnectionSocketFactory sslSocketFactory = SSLConnectionSocketFactoryBuilder.create()
                     .setSslContext(sslContext)
+                    .setHostnameVerifier(NoopHostnameVerifier.INSTANCE) // <--- ESTO ES CLAVE
                     .build();
 
             HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
