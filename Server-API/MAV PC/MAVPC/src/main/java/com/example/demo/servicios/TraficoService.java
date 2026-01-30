@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.servicios;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -25,20 +25,31 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class TraficoService {
 
-	@Autowired
+    @Autowired
     private CamaraDao camaraDao;
-	@Autowired
+    @Autowired
     private IncidenciaDao incidenciaDao;
-	
-	@Autowired
+    
+    // Inyectamos el RestTemplate configurado en 'Configracion.java' (el que ignora SSL)
+    @Autowired
     private RestTemplate restTemplate;
+    
     private final String BASE_URL = "https://api.euskadi.eus/traffic/v1.0";
 
-    // 1. Todas las incidencias 
+    /**
+     * Obtiene un objeto genérico con todas las incidencias (endpoint básico).
+     * Útil para pruebas rápidas de conexión.
+     */
     public Object obtenerTodasIncidencias() {
         return restTemplate.getForObject(BASE_URL + "/incidences", Object.class);
     }
     
+    /**
+     * Descarga todas las incidencias de una fecha específica.
+     * * COMPLEJIDAD: 
+     * - Maneja la paginación de la API (bucle do-while).
+     * - Deserializa manualmente el JSON para leer 'totalPages'.
+     */
     public List<Incidencia> obtenerTodasIncidenciasDelDia(String anio, String mes, String dia) {
         List<Incidencia> todasLasDelDia = new ArrayList<>();
         int paginaActual = 1;
@@ -46,31 +57,33 @@ public class TraficoService {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
+            // Bucle para recorrer todas las páginas disponibles en la API
             do {
-                // Construimos la URL con la fecha Y el parámetro de página
                 String url = BASE_URL + "/incidences/byDate/" + anio + "/" + mes + "/" + dia + "?_page=" + paginaActual;
                 
+                // Obtenemos la respuesta como un Nodo JSON genérico para poder inspeccionarlo antes de convertir
                 JsonNode root = restTemplate.getForObject(url, JsonNode.class);
 
                 if (root != null && root.has("incidences")) {
-                    // En la primera página, leemos el total de páginas para esa fecha
+                    // Solo en la primera vuelta leemos cuántas páginas hay en total
                     if (paginaActual == 1 && root.has("totalPages")) {
                         totalPaginas = root.get("totalPages").asInt();
                     }
 
-                    // Extraemos la lista de esta página
+                    // Extraemos el array "incidences" del JSON
                     JsonNode nodes = root.get("incidences");
+                    
+                    // Convertimos ese nodo JSON a una Lista de objetos Java 'Incidencia'
                     List<Incidencia> paginaLista = mapper.convertValue(
                         nodes, 
                         new TypeReference<List<Incidencia>>() {}
                     );
 
-                    // Añadimos los resultados a la lista acumulada
                     todasLasDelDia.addAll(paginaLista);
                     
                     paginaActual++;
                 } else {
-                    break;
+                    break; // Si no hay incidencias o respuesta, salimos
                 }
             } while (paginaActual <= totalPaginas);
 
@@ -81,16 +94,19 @@ public class TraficoService {
         return todasLasDelDia;
     }
 
-    // 3. Obtener Cámaras de tráfico
+    /**
+     * Obtiene una lista rápida de cámaras (primeras 1000).
+     * Usa TypeReference para mapear directamente el JSON a lista de objetos.
+     */
     public List<Camara> obtenerCamaras() {
         try {
             JsonNode root = restTemplate.getForObject("https://api.euskadi.eus/traffic/v1.0/cameras?_pageSize=1000", JsonNode.class);
             
             if (root != null && root.has("cameras")) {
                 JsonNode camerasNode = root.get("cameras");
-                
                 ObjectMapper mapper = new ObjectMapper();
-                // Usamos TypeReference para que Jackson sepa exactamente cómo manejar la lista
+                
+                // Magia de Jackson: Convierte el nodo JSON directamente a List<Camara>
                 return mapper.readerFor(new TypeReference<List<Camara>>() {})
                              .readValue(camerasNode);
             }
@@ -100,6 +116,12 @@ public class TraficoService {
         return Collections.emptyList();
     }
     
+    /**
+     * Proceso masivo para descargar, corregir y guardar cámaras en la BD.
+     * * COMPLEJIDAD:
+     * - Corrección de URLs: Reemplaza dominios antiguos por nuevos.
+     * - Validación: Comprueba si la imagen existe (Ping) antes de guardar.
+     */
     public void SubirCamaras() {
         int paginaActual = 1;
         int totalPaginas = 1;
@@ -115,13 +137,11 @@ public class TraficoService {
                 JsonNode root = restTemplate.getForObject(urlConPagina, JsonNode.class);
 
                 if (root != null && root.has("cameras")) {
-                    // 1. Obtener total de páginas
                     if (paginaActual == 1) {
                         totalPaginas = root.get("totalPages").asInt();
                         System.out.println("Total de páginas detectadas: " + totalPaginas);
                     }
 
-                    // 2. Convertir JSON a Lista
                     JsonNode camerasNode = root.get("cameras");
                     ObjectMapper mapper = new ObjectMapper();
                     
@@ -130,45 +150,37 @@ public class TraficoService {
                         new TypeReference<List<Camara>>() {}
                     );
 
-                    // Lista temporal para almacenar SOLO las válidas
                     List<Camara> camarasParaGuardar = new ArrayList<>();
 
-                    // --- BUCLE DE PROCESAMIENTO ---
                     for (Camara camara : listaPagina) {
                         
-                        // A. Limpiar ID para autoincremento
+                        // Reseteamos ID a null para que la BD genere uno nuevo (autoincrement)
                         camara.setId(null); 
 
-                        // B. Lógica de corrección de URL (Hacer esto ANTES de validar)
+                        // LÓGICA DE NEGOCIO: Actualizar dominios obsoletos
                         String urlCamara = camara.getUrlImage();
                         if (urlCamara != null && urlCamara.contains(dominioAntiguo)) {
                             String nuevaUrl = urlCamara.replace(dominioAntiguo, dominioNuevo);
                             camara.setUrlImage(nuevaUrl);
-                            urlCamara = nuevaUrl; // Actualizamos la variable local para usarla en la validación
+                            urlCamara = nuevaUrl;
                         }
 
-                        // C. FILTRADO: Validar URL (No null y Status 200)
+                        // VALIDACIÓN: Solo guardamos si la URL responde (evita imágenes rotas en la app)
                         if (urlCamara != null && esUrlValida(urlCamara)) {
                             camarasParaGuardar.add(camara);
-                        } else {
-                            // Opcional: Log para saber cuáles se ignoran
-                            // System.out.println("Ignorando cámara sin imagen válida: " + camara.getSourceId());
                         }
                     }
-                    // ------------------------------
 
-                    // 3. Guardar en BD solo las filtradas
+                    // Guardado por lotes (más eficiente que guardar una por una)
                     if (!camarasParaGuardar.isEmpty()) {
                         camaraDao.saveAll(camarasParaGuardar);
-                        System.out.println("Guardada página " + paginaActual + ". Insertadas: " + camarasParaGuardar.size() + " (Descartadas: " + (listaPagina.size() - camarasParaGuardar.size()) + ")");
+                        System.out.println("Guardada página " + paginaActual + ". Insertadas: " + camarasParaGuardar.size());
                     } else {
                         System.out.println("Página " + paginaActual + " procesada, pero ninguna cámara tenía imagen válida.");
                     }
 
                     paginaActual++;
                     
-                    // NOTA: Al verificar URLs una por una, el proceso será más lento.
-                    // Thread.sleep(100); // Quizás ya no necesites sleep si la red hace de cuello de botella natural
                 } else {
                     break;
                 }
@@ -182,23 +194,26 @@ public class TraficoService {
     }
 
     /**
-     * Método auxiliar para verificar si una URL devuelve código 200.
-     * Usa HEAD para ser más rápido (no descarga la imagen).
+     * Método auxiliar para validar si una URL de imagen es accesible.
+     * * TRUCO:
+     * - Usa el método HTTP "HEAD" en lugar de "GET".
+     * - "HEAD" pide solo los encabezados (metadata) sin descargar la imagen entera.
+     * - Esto hace la comprobación muchísimo más rápida y ahorra datos.
      */
     private boolean esUrlValida(String urlString) {
         try {
-            // ✅ Usar URI en lugar de URL directamente
             URI uri = new URI(urlString);
             URL url = uri.toURL();
             
             HttpURLConnection huc = (HttpURLConnection) url.openConnection();
             
-            huc.setRequestMethod("HEAD");
-            huc.setConnectTimeout(2000);
+            huc.setRequestMethod("HEAD"); // Clave para rendimiento
+            huc.setConnectTimeout(2000);  // Si tarda más de 2s, asumimos que está caída
             huc.setReadTimeout(2000);
             
             int responseCode = huc.getResponseCode();
             
+            // Devuelve true solo si el servidor responde "200 OK"
             return responseCode == HttpURLConnection.HTTP_OK; 
             
         } catch (Exception e) {
@@ -206,8 +221,17 @@ public class TraficoService {
         }
     }
     
-    @Scheduled(fixedRate = 900000) // Cada 15 minutos
+    /**
+     * Tarea programada (Cron Job) que se ejecuta automáticamente.
+     * Se conecta a la API, comprueba duplicados y guarda nuevas incidencias.
+     * * COMPLEJIDAD:
+     * - Configuración de fecha dinámica (siempre busca "hoy").
+     * - Prevención de duplicados consultando a la BD antes de insertar.
+     * - Control de flujo (Thread.sleep) para no saturar la API externa.
+     */
+    @Scheduled(fixedRate = 900000) // Se ejecuta cada 900,000 ms (15 minutos)
     public void SubirIncidenciasDelDia() {
+        // Cálculo de la fecha de hoy para construir la URL dinámica
         LocalDate hoy = LocalDate.now();
         String anio = String.valueOf(hoy.getYear());
         String mes = String.format("%02d", hoy.getMonthValue());
@@ -221,18 +245,20 @@ public class TraficoService {
         String URL_BASE = "https://api.euskadi.eus/traffic/v1.0/incidences/byDate/" 
                           + anio + "/" + mes + "/" + dia;
 
-        ObjectMapper mapper = new ObjectMapper(); // Instanciar una sola vez fuera del bucle
+        ObjectMapper mapper = new ObjectMapper(); 
 
         do {
             String urlConPagina = URL_BASE + "?_page=" + paginaActual;
             
             try {
+                // Llamada a la API usando el RestTemplate seguro (SSL bypass)
                 JsonNode root = restTemplate.getForObject(urlConPagina, JsonNode.class);
 
                 if (root != null && root.has("incidences")) {
+                    // Detectar total de páginas solo en la primera iteración
                     if (paginaActual == 1) {
                         totalPaginas = root.get("totalPages").asInt();
-                        System.out.println("📅 Sincronizando: " + dia + "/" + mes + "/" + anio);
+                        System.out.println("Sincronizando: " + dia + "/" + mes + "/" + anio);
                     }
 
                     JsonNode incidenciasNode = root.get("incidences");
@@ -244,8 +270,11 @@ public class TraficoService {
                     List<Incidencia> incidenciasAInsertar = new ArrayList<>();
                     int duplicadasEnPagina = 0;
 
+                    // FILTRADO DE DUPLICADOS:
+                    // Iteramos lo que viene de la API y preguntamos a la base de datos
+                    // si ya tiene ese ID específico.
                     for (Incidencia incidencia : listaPagina) {
-                        // COMPROBACIÓN: ¿Existe ya este incidence_id en la BD?
+                        // IMPORTANTE: 'existsByIncidenceId' evita errores de Primary Key duplicada
                         if (!incidenciaDao.existsByIncidenceId(incidencia.getIncidenceId())) {
                             incidenciasAInsertar.add(incidencia);
                         } else {
@@ -253,29 +282,30 @@ public class TraficoService {
                         }
                     }
 
+                    // Solo llamamos a la base de datos si hay algo nuevo que guardar
                     if (!incidenciasAInsertar.isEmpty()) {
                         incidenciaDao.saveAll(incidenciasAInsertar);
                         nuevasIncidencias += incidenciasAInsertar.size();
                     }
                     
                     duplicadasTotal += duplicadasEnPagina;
-                    System.out.println("📄 Página " + paginaActual + "/" + totalPaginas 
+                    System.out.println("Página " + paginaActual + "/" + totalPaginas 
                                        + " -> Nuevas: " + incidenciasAInsertar.size() 
                                        + " | Omitidas: " + duplicadasEnPagina);
 
                     paginaActual++;
-                    Thread.sleep(100); 
+                    Thread.sleep(100); // Pausa de 100ms para ser "educados" con la API
 
                 } else {
                     break;
                 }
             } catch (Exception e) {
-                System.err.println("❌ Error en página " + paginaActual + ": " + e.getMessage());
-                break;
+                System.err.println("Error en página " + paginaActual + ": " + e.getMessage());
+                break; // Si falla una página, rompemos el bucle para evitar bucles infinitos de error
             }
 
         } while (paginaActual <= totalPaginas);
 
-        System.out.println("🏁 Sincronización finalizada. Nuevas: " + nuevasIncidencias + " | Duplicadas: " + duplicadasTotal);
+        System.out.println("Sincronización finalizada. Nuevas: " + nuevasIncidencias + " | Duplicadas: " + duplicadasTotal);
     }
 }

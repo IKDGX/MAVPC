@@ -17,7 +17,7 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
-import org.apache.hc.client5.http.ssl.NoopHostnameVerifier; // <--- NUEVO IMPORT
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 
 import com.example.demo.modelos.Incidencia;
 import com.example.demo.modelos.IncidenciaCreada;

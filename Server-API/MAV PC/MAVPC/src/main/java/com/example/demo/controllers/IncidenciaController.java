@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.TraficoService;
 import com.example.demo.daos.IncidenciaCreadaDao;
 import com.example.demo.daos.IncidenciaDao;
 import com.example.demo.modelos.Incidencia;
 import com.example.demo.modelos.IncidenciaCreada;
+import com.example.demo.servicios.TraficoService;
 
 @RestController
 @RequestMapping("/api/incidencias")

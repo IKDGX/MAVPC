@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.TraficoService;
 import com.example.demo.daos.CamaraDao;
 import com.example.demo.modelos.Camara;
+import com.example.demo.servicios.TraficoService;
 
 @RestController
 @RequestMapping("/api/camaras")
